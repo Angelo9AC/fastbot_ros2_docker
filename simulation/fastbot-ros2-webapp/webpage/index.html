@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FastBot Control Panel</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eventemitter2@6.4.9/lib/eventemitter2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/dist/nipplejs.min.js"></script>
+
+    <style>
+        /* Minimal loading */
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a192f;
+            color: #e6f1ff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a192f;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #64ffda;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #app {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <div class="loader"></div>
+        <p style="margin-top: 20px; color: #64ffda; font-size: 14px;">Loading FastBot Panel...</p>
+        <p id="loadStatus" style="margin-top: 10px; color: #8892b0; font-size: 12px;">Initializing</p>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">🤖</div>
+                <h1>FastBot Control</h1>
+                <div class="status-badge" id="robotStatus">OFFLINE</div>
+            </div>
+            <div class="header-right">
+                <div class="connection-info">
+                    <span>ROS: </span>
+                    <span id="rosStatus" class="status-offline">Disconnected</span>
+                </div>
+                <div class="header-controls">
+                    <button id="connectBtn" class="btn-small btn-primary">Connect</button>
+                    <button id="disconnectBtn" class="btn-small btn-danger" disabled>Disconnect</button>
+                    <button id="testBtn" class="btn-small btn-secondary">Test</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Column 1: Map and 3D Model -->
+            <div class="column col1">
+                <!-- Map and 3D Model Container -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><span class="icon">🗺️</span> Map & 3D Model</h2>
+                        <div class="panel-actions">
+                            <span id="mapInfo" class="info-text">Map</span>
+                            <div class="status-dot" id="mapStatusDot"></div>
+                            <button id="refreshMap" class="btn-icon" title="Refresh Map">↻</button>
+                            <button id="reset3DView" class="btn-icon" title="Reset 3D View">🔄</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="map-3d-container">
+                            <!-- Left: Map -->
+                            <div class="map-wrapper">
+                                <canvas id="mapCanvas"></canvas>
+                                <div class="overlay" id="mapOverlay">
+                                    <div class="spinner-small"></div>
+                                    <p>Waiting for connection...</p>
+                                </div>
+                            </div>
+
+                            <!-- Right: 3D Model -->
+                            <div class="model-wrapper">
+                                <canvas id="modelCanvas"></canvas>
+                                <div class="overlay" id="modelOverlay">
+                                    <div class="spinner-small"></div>
+                                    <p>Loading 3D model...</p>
+                                </div>
+                                <div class="model-controls">
+                                    <button id="rotateToggle" class="btn-icon" title="Auto-rotate">↻</button>
+                                    <button id="viewTop" class="btn-icon" title="Top View">⬆</button>
+                                    <button id="viewFront" class="btn-icon" title="Front View">⬇</button>
+                                    <button id="viewSide" class="btn-icon" title="Side View">⫸</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="map-stats">
+                            <div class="stat">
+                                <span class="stat-label">Position:</span>
+                                <span class="stat-value" id="mapPosition">0.00, 0.00</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Orientation:</span>
+                                <span class="stat-value" id="modelOrientation">0.0°</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Size:</span>
+                                <span class="stat-value" id="mapSize">80x80</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><span class="icon">📷</span> Camera</h2>
+                        <div class="panel-actions">
+                            <span id="cameraInfo" class="info-text">Not connected</span>
+                            <div class="status-dot" id="cameraStatusDot"></div>
+                            <button id="refreshCamera" class="btn-icon" title="Refresh Camera">↻</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="camera-wrapper">
+                            <img id="cameraImage" alt="Camera feed" crossorigin="anonymous">
+                            <div class="overlay" id="cameraOverlay">
+                                <div class="camera-placeholder">📷</div>
+                                <p id="cameraMessage">Camera feed loading...</p>
+                                <button id="enableCamera" class="btn-small btn-primary" style="margin-top: 10px;">Enable
+                                    Camera</button>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button id="toggleCamera" class="btn-small btn-secondary">Toggle View</button>
+                            <span class="info-text" style="margin-left: auto;">FPS: <span id="cameraFps">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: Control and Status -->
+            <div class="column col2">
+                <!-- Control -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><span class="icon">🎮</span> Control</h2>
+                        <div class="panel-actions">
+                            <span class="info-text">Speed: <span id="speedValue">0.5</span> m/s</span>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="joystick-area">
+                            <div id="joystick"></div>
+                            <div class="joystick-center">•</div>
+                        </div>
+                        <div class="control-info">
+                            <div class="info-item">
+                                <span>Force:</span>
+                                <span id="forceValue">0%</span>
+                            </div>
+                            <div class="info-item">
+                                <span>Angle:</span>
+                                <span id="angleValue">0°</span>
+                            </div>
+                            <div class="info-item">
+                                <span>Mode:</span>
+                                <span id="controlMode">Manual</span>
+                            </div>
+                        </div>
+                        <div class="speed-control">
+                            <label for="speedSlider">Speed Limit</label>
+                            <div class="slider-container">
+                                <input type="range" id="speedSlider" min="0.1" max="1.0" step="0.1" value="0.5">
+                                <div class="slider-ticks">
+                                    <span>0.1</span>
+                                    <span>0.5</span>
+                                    <span>1.0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="control-buttons">
+                            <button id="stopBtn" class="btn-danger">
+                                <span class="btn-icon">🛑</span>
+                                Emergency Stop
+                            </button>
+                            <button id="autoMode" class="btn-secondary">Auto Mode</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><span class="icon">📊</span> Robot Status</h2>
+                        <button id="refreshStatus" class="btn-icon" title="Refresh Status">↻</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <div class="status-icon">📍</div>
+                                <div class="status-details">
+                                    <div class="status-label">Position (x, y)</div>
+                                    <div class="status-value" id="positionValue">0.00, 0.00 m</div>
+                                </div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-icon">🧭</div>
+                                <div class="status-details">
+                                    <div class="status-label">Orientation (θ)</div>
+                                    <div class="status-value" id="orientationValue">0.0°</div>
+                                </div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-icon">⚡</div>
+                                <div class="status-details">
+                                    <div class="status-label">Linear Speed</div>
+                                    <div class="status-value" id="linearSpeedValue">0.00 m/s</div>
+                                </div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-icon">🔄</div>
+                                <div class="status-details">
+                                    <div class="status-label">Angular Speed</div>
+                                    <div class="status-value" id="angularSpeedValue">0.00 rad/s</div>
+                                </div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-icon">🔋</div>
+                                <div class="status-details">
+                                    <div class="status-label">Battery</div>
+                                    <div class="status-value" id="batteryValue">85%</div>
+                                    <div class="battery-bar">
+                                        <div class="battery-level" id="batteryLevel"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-icon">🎯</div>
+                                <div class="status-details">
+                                    <div class="status-label">Operation Mode</div>
+                                    <div class="status-value" id="modeValue">IDLE</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ros-stats">
+                            <div class="stat">
+                                <span class="stat-label">Uptime:</span>
+                                <span class="stat-value" id="uptime">00:00:00</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Messages:</span>
+                                <span class="stat-value" id="messageCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 3: Waypoints and Connection -->
+            <div class="column col3">
+                <!-- Waypoints -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><span class="icon">📍</span> Navigation</h2>
+                        <div class="panel-actions">
+                            <button id="clearWaypoints" class="btn-icon" title="Clear History">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="waypoints-grid">
+                            <button class="waypoint" data-x="1.5" data-y="0.0" data-name="Living Room">
+                                <span class="waypoint-icon">🛋️</span>
+                                <div class="waypoint-content">
+                                    <div class="waypoint-name">Living Room</div>
+                                    <div class="waypoint-coord">(1.5, 0.0)</div>
+                                </div>
+                            </button>
+                            <button class="waypoint" data-x="0.0" data-y="1.5" data-name="Kitchen">
+                                <span class="waypoint-icon">🍳</span>
+                                <div class="waypoint-content">
+                                    <div class="waypoint-name">Kitchen</div>
+                                    <div class="waypoint-coord">(0.0, 1.5)</div>
+                                </div>
+                            </button>
+                            <button class="waypoint" data-x="-1.5" data-y="0.0" data-name="Bedroom">
+                                <span class="waypoint-icon">🛏️</span>
+                                <div class="waypoint-content">
+                                    <div class="waypoint-name">Bedroom</div>
+                                    <div class="waypoint-coord">(-1.5, 0.0)</div>
+                                </div>
+                            </button>
+                            <button class="waypoint" data-x="0.0" data-y="-1.5" data-name="Entrance">
+                                <span class="waypoint-icon">🚪</span>
+                                <div class="waypoint-content">
+                                    <div class="waypoint-name">Entrance</div>
+                                    <div class="waypoint-coord">(0.0, -1.5)</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="custom-waypoint">
+                            <h3>🎯 Custom Destination</h3>
+                            <div class="input-group">
+                                <div class="input-field">
+                                    <label for="customX">X:</label>
+                                    <input type="number" id="customX" placeholder="0.0" step="0.1" value="1.0">
+                                </div>
+                                <div class="input-field">
+                                    <label for="customY">Y:</label>
+                                    <input type="number" id="customY" placeholder="0.0" step="0.1" value="1.0">
+                                </div>
+                                <div class="input-field">
+                                    <label for="customTheta">θ:</label>
+                                    <input type="number" id="customTheta" placeholder="0.0" step="0.1" value="0.0">
+                                </div>
+                                <button id="sendWaypoint" class="btn-primary">
+                                    <span class="btn-icon">🚀</span>
+                                    Go
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="waypoint-history">
+                            <h4>Navigation History</h4>
+                            <div id="historyList" class="history-list">
+                                <!-- History items will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><span class="icon">🔗</span> Connection</h2>
+                        <div class="panel-actions">
+                            <div class="connection-status" id="connectionStatus">
+                                <div class="status-dot-small"></div>
+                                <span>Disconnected</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="url-input">
+                            <label for="rosbridgeUrl">ROS Bridge URL:</label>
+                            <div class="input-with-button">
+                                <input type="text" id="rosbridgeUrl"
+                                    value="wss://i-0932d1623340ab90d.robotigniteacademy.com/36b4e344-3c21-42dd-9ba8-9aac4ae35f43/rosbridge/"
+                                    placeholder="wss://...">
+                                <button id="copyUrl" class="btn-icon" title="Copy URL">📋</button>
+                            </div>
+                        </div>
+
+                        <div class="service-status">
+                            <h4>Service Status</h4>
+                            <div class="services-list">
+                                <div class="service-item">
+                                    <div class="service-name">rosbridge_server</div>
+                                    <div class="service-status-indicator">
+                                        <div class="status-dot-small" id="rosbridgeStatus"></div>
+                                        <span>Disconnected</span>
+                                    </div>
+                                </div>
+                                <div class="service-item">
+                                    <div class="service-name">web_video_server</div>
+                                    <div class="service-status-indicator">
+                                        <div class="status-dot-small" id="cameraServiceStatus"></div>
+                                        <span id="cameraServiceText">Not running</span>
+                                    </div>
+                                </div>
+                                <div class="service-item">
+                                    <div class="service-name">Navigation Stack</div>
+                                    <div class="service-status-indicator">
+                                        <div class="status-dot-small" id="navStatus"></div>
+                                        <span id="navServiceText">Not running</span>
+                                    </div>
+                                </div>
+                                <div class="service-item">
+                                    <div class="service-name">Robot Control</div>
+                                    <div class="service-status-indicator">
+                                        <div class="status-dot-small" id="controlStatus"></div>
+                                        <span id="controlServiceText">Disconnected</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="connection-actions">
+                            <button id="startServices" class="btn-small btn-primary">Start Services</button>
+                            <button id="diagnoseBtn" class="btn-small btn-secondary">Diagnose</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div id="notifications"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

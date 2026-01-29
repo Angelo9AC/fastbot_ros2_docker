@@ -1,0 +1,45 @@
+version: "3.3"
+
+services:
+  fastbot-ros2-gazebo:
+    build:
+      context: ../../..
+      dockerfile: src/fastbot_ros2_docker/simulation/fastbot-ros2-gazebo/Dockerfile
+    container_name: fastbot-ros2-gazebo
+    command: >
+      bash -c "
+      source /opt/ros/humble/setup.bash &&
+      source /ros2_ws/install/setup.bash &&
+      ros2 launch fastbot_gazebo botbox_world.launch.xml
+      "
+    tty: true
+    networks:
+      - simulation
+
+  fastbot-ros2-slam:
+    build:
+      context: ../../..
+      dockerfile: src/fastbot_ros2_docker/simulation/fastbot-ros2-slam/Dockerfile
+    container_name: fastbot-ros2-slam
+    command: >
+      bash -c "
+      source /opt/ros/humble/setup.bash &&
+      source /ros2_ws/install/setup.bash &&
+      ros2 launch fastbot_slam cartographer.launch.py
+      "
+    tty: true
+    networks:
+      - simulation
+
+  fastbot-ros2-webapp:
+    build:
+      context: ./fastbot-ros2-webapp
+      dockerfile: Dockerfile
+    container_name: fastbot-ros2-webapp
+    ports:
+      - "8080:80"
+    networks: [simulation]
+
+networks:
+  simulation:
+    driver: bridge
