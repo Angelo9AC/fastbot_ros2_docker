@@ -1,0 +1,61 @@
+services:
+
+  fastbot-ros2-real:
+    build:
+      context: .
+      dockerfile: fastbot-ros2-real/Dockerfile
+
+    container_name: fastbot-ros2-real
+    network_mode: host
+    ipc: host
+    pid: host
+    privileged: true
+    restart: unless-stopped
+
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/ttyACM0:/dev/ttyACM0
+
+    volumes:
+      - /home/fastbot/ros2_ws:/root/ros2_ws
+
+    environment:
+      - ROS_DOMAIN_ID=30
+
+    stdin_open: true
+    tty: true
+
+    command: >
+      bash -c "
+      source /opt/ros/humble/setup.bash &&
+      sleep infinity
+      "
+
+
+
+  fastbot-ros2-slam-real:
+    build:
+      context: .
+      dockerfile: fastbot-ros2-slam-real/Dockerfile
+
+    container_name: fastbot-ros2-slam-real
+    network_mode: host
+    ipc: host
+    pid: host
+    privileged: true
+    restart: unless-stopped
+
+    volumes:
+      - /home/fastbot/ros2_ws:/root/ros2_ws
+
+    environment:
+      - ROS_DOMAIN_ID=30
+
+    stdin_open: true
+    tty: true
+
+    command: >
+      bash -c "
+      source /opt/ros/humble/setup.bash &&
+      sleep infinity
+      "
