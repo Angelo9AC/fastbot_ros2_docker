@@ -31,8 +31,12 @@ services:
 
     command: >
       bash -c "
+      cd /root/ros2_ws &&
+      rm -rf build install log &&
       source /opt/ros/humble/setup.bash &&
-      sleep infinity
+      colcon build &&
+      source install/setup.bash &&
+      ros2 launch fastbot_bringup bringup.launch.xml
       "
 
 
