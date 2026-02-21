@@ -18,9 +18,13 @@ services:
 
     volumes:
       - /home/fastbot/ros2_ws:/root/ros2_ws
+      - /var/lib/theconstruct.rrl:/var/lib/theconstruct.rrl
+
 
     environment:
       - ROS_DOMAIN_ID=30
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - CYCLONEDDS_URI=file:///var/lib/theconstruct.rrl/cyclonedds_husarnet.xml
 
     stdin_open: true
     tty: true
@@ -47,9 +51,13 @@ services:
 
     volumes:
       - /home/fastbot/ros2_ws:/root/ros2_ws
+      - /var/lib/theconstruct.rrl:/var/lib/theconstruct.rrl
+
 
     environment:
       - ROS_DOMAIN_ID=30
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - CYCLONEDDS_URI=file:///var/lib/theconstruct.rrl/cyclonedds_husarnet.xml
 
     stdin_open: true
     tty: true

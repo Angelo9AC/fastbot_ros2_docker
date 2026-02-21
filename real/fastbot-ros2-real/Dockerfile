@@ -15,7 +15,10 @@ RUN apt-get update && apt-get install -y \
     ros-humble-joint-state-publisher \
     ros-humble-rosbridge-server \
     ros-humble-rviz2 \
+    ros-humble-v4l2-camera \
+    ros-humble-rmw-cyclonedds-cpp \    
     python3-colcon-common-extensions \
+    python3-serial \
     && rm -rf /var/lib/apt/lists/*
 
 CMD bash
