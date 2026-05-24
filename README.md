@@ -8,7 +8,7 @@ both in simulation and on the real robot.
 https://github.com/Angelo9AC/fastbot_ros2_docker.git
 
 The username is Angelo9AC
-The password is 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
+The password is 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
 
 ## For the simulation
 
