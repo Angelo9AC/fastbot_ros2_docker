@@ -17,7 +17,6 @@ services:
       - /dev/ttyACM0:/dev/ttyACM0
 
     volumes:
-      - /home/fastbot/ros2_ws:/root/ros2_ws
       - /var/lib/theconstruct.rrl:/var/lib/theconstruct.rrl
 
 
