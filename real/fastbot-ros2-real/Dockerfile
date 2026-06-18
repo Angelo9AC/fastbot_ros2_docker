@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar workspace ROS2 dentro de la imagen
-COPY ros2_ws/src ./src
+RUN git clone https://github.com/Angelo9AC/docker_fastbot.git src/fastbot
 
 # Construir workspace
 RUN bash -c "source /opt/ros/humble/setup.bash && \
