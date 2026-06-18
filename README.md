@@ -8,7 +8,6 @@ both in simulation and on the real robot.
 https://github.com/Angelo9AC/fastbot_ros2_docker.git
 
 The username is Angelo9AC
-The password is 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
 
 ## For the simulation
 
@@ -61,13 +60,24 @@ colcon build
 source install/setup.bash
 
 If there is an error related to colcon build, you need to type on the root directory: sudo chown -R fastbot:fastbot ros2_ws
-And then, go to the ros2_ws directory and type: rm -rf build install log
+And then, go to the ros2_ws directory and type: 
+rm -rf build install log
+sudo rm -rf build install log
+source /opt/ros/humble/setup.bash
+
+If there is still an error, you need to do the following:
+sudo apt update
+sudo apt install -y ros-humble-rosidl-default-generators ros-humble-rosidl-default-runtime
+sudo apt install -y python3-colcon-common-extensions
+
 
 And then: 
 
 cd ros2_ws
+rm -rf build install log
 colcon build
 source install/setup.bash
+docker ps
 
 Then, you should navigate to ~/ros2_ws/src/fastbot_ros2_docker/real and you can check with the following command that the docker containers are ok:
 
@@ -83,7 +93,8 @@ real-fastbot-ros2-real            latest    d8e287386689   3 hours ago    2.93GB
 real-fastbot-ros2-slam-real       latest    99ab0f1452f5   2 days ago     2.6GB
 public.ecr.aws/theconstruct/rrl   arm64     2d54442022ee   5 months ago   213MB
 
-Then, you need to type the following command in order to run the containers: docker compose up
+Then, you need to type the following command in order to run the containers: 
+docker compose up
 
 And you should get this result:
 [+] Running 2/0
