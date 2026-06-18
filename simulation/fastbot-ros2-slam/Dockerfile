@@ -10,8 +10,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /ros2_ws
 
-COPY src/fastbot /ros2_ws/src/fastbot
+RUN git clone https://github.com/Angelo9AC/docker_fastbot.git src/fastbot
 
-RUN source /opt/ros/humble/setup.bash && colcon build
+# Construir workspace
+RUN bash -c "source /opt/ros/humble/setup.bash && \
+    colcon build"
+
+# Source automático al abrir el contenedor
+RUN echo 'source /opt/ros/humble/setup.bash' >> /root/.bashrc && \
+    echo 'source /ros2_ws/install/setup.bash' >> /root/.bashrc
 
 CMD ["bash"]
